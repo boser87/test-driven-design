@@ -5,7 +5,7 @@ import org.jivesoftware.smack.packet.Message;
 
 import javax.swing.*;
 
-public class Main {
+public class Main implements SniperListener {
     public static final String MAIN_WINDOW_NAME = "Auction Sniper Main";
     public static final String SNIPER_STATUS_NAME = "sniper status";
 
@@ -40,14 +40,8 @@ public class Main {
         connection.login(username, password, AUCTION_RESOURCE);
 
         System.out.println("Sniper is creating a chat...");
-        Chat chat = connection.getChatManager().createChat(auctionId(itemId, connection), new MessageListener() {
-            public void processMessage(Chat aChat, Message message) {
-                SwingUtilities.invokeLater(() -> {
-                    System.out.println("Sniper has received auction closed message");
-                    ui.showsLabel("Lost");
-                });
-            }
-        });
+        Chat chat = connection.getChatManager().createChat(auctionId(itemId, connection),
+                new AuctionMessageTranslator(new AuctionSniper(this, new Auction())));
         System.out.println("Sniper is sending an empty message to join the bid...");
         chat.sendMessage(new Message());
     }
@@ -61,6 +55,22 @@ public class Main {
             public void run() {
                 ui = new MainWindow();
             }
+        });
+    }
+
+    @Override
+    public void sniperLost() {
+        SwingUtilities.invokeLater(() -> {
+            System.out.println("Sniper has received auction closed message");
+            ui.showsLabel("Lost");
+        });
+    }
+
+    @Override
+    public void sniperBidding() {
+        SwingUtilities.invokeLater(() -> {
+            System.out.println("Sniper has sent a bidding message");
+            ui.showsLabel("Bidding");
         });
     }
 }

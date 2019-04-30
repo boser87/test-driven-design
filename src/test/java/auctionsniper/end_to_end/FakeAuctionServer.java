@@ -1,14 +1,15 @@
-package end_to_end;
+package auctionsniper.end_to_end;
 
+import org.hamcrest.Matcher;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.Message;
 
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 public class FakeAuctionServer {
@@ -16,7 +17,7 @@ public class FakeAuctionServer {
     public static final String AUCTION_RESOURCE = "Auction";
     public static final String AUCTION_PASSWORD = "auction";
 
-    public static final String XMPP_HOSTNAME = "192.168.1.207";
+    public static final String XMPP_HOSTNAME = "Stefanos-MacBook-Pro.local";
     public static final int XMPP_PORT = 5222;
     public static final String XMPP_SERVICE_NAME = "localhost";
 
@@ -32,6 +33,16 @@ public class FakeAuctionServer {
     }
 
     private final SingleMessageListener messageListener = new SingleMessageListener();
+
+    public void reportPrice(int price, int increment, String bidder) throws XMPPException {
+        currentChat.sendMessage(String.format("SOLVersion: 1.1; Event: PRICE; "
+                + "CurrentPrice: %d; Increment: %d; Bidder: %s;", price, increment, bidder));
+    }
+
+    public void hasReceivedBid(int bid, String sniperId) throws InterruptedException {
+        assertThat(currentChat.getParticipant(), equalTo(sniperId));
+        messageListener.receivesAMessage(equalTo(String.format("SOLVersion: 1.1; Command: BID; Price: %d;", bid)));
+    }
 
     public void startSellingItem() throws XMPPException {
         System.out.println("Auction server is starting to sell an item. Connecting...");
@@ -75,6 +86,12 @@ public class FakeAuctionServer {
         public void receivesAMessage() throws InterruptedException {
             assertThat("Message", messages.poll(5, SECONDS), is(notNullValue()));
             System.out.println("Auction server has received joining message");
+        }
+
+        public void receivesAMessage(Matcher<? super String> messageMatcher) throws InterruptedException {
+            final Message message = messages.poll(5, TimeUnit.SECONDS);
+            assertThat("Message", message, is(notNullValue()));
+            assertThat(message.getBody(), messageMatcher);
         }
     }
 }

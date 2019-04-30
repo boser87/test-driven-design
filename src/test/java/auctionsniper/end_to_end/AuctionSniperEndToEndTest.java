@@ -1,4 +1,4 @@
-package end_to_end;
+package auctionsniper.end_to_end;
 
 import org.junit.After;
 import org.junit.Test;
@@ -14,6 +14,19 @@ public class AuctionSniperEndToEndTest {
         auction.hasReceivedJoinRequestFromSniper(); // Step 3
         auction.announceClosed();                   // Step 4
         application.showsSniperHasLostAuction();    // Step 5
+    }
+
+    @Test
+    public void
+    sniperMakesAHigherBidButLoses() throws Exception {
+        auction.startSellingItem();
+        application.startBiddingIn(auction);
+        auction.hasReceivedJoinRequestFromSniper();
+        auction.reportPrice(1000, 98, "other bidder");
+        application.hasShownSniperIsBidding();
+        auction.hasReceivedBid(1098, ApplicationRunner.SNIPER_XMPP_ID);
+        auction.announceClosed();
+        application.showsSniperHasLostAuction();
     }
 
     // Additional cleanup
